@@ -72,3 +72,26 @@ export TEST_SUITE_DIR=/path/to/test-suite-sources
 
   `ninja help | grep cuda` will show all the targets, for your copy/pasting
   pleasure.
+
+* CUDA library tests
+  The tests in the directories named after a CUDA library (cublas/, cufft/,
+  curand/, cusolver/, cusparse/) build small programs against that library and
+  run them on the GPU. Each checks its own results against values computed on
+  the host or known in closed form, and prints a PASS or FAIL line per check,
+  which its reference output then compares. Like the other tests, they get a
+  variant per CUDA version, C++ standard and standard library, and are named
+  <library>-<test>-<variant_suffix>, e.g. cublas-level1-cuda-12.9-c++11-libc++.
+
+  The GPU code doing the libraries' work is NVIDIA's, compiled into the
+  libraries, so these tests are about Clang compiling programs against the
+  libraries' headers, linking them and running them, rather than about its
+  device code generation.
+
+  A CUDA installation which lacks a library gets no tests of it. They are not
+  part of cuda-tests-simple:
+
+    $ ninja cuda-tests-libraries
+    $ ninja check-cuda-libraries
+
+  or cuda-tests-libraries-<variant_suffix> and check-cuda-libraries-<variant_suffix>
+  for one variant. cuda-tests-all and cuda-tests-<variant_suffix> include them.

@@ -90,6 +90,10 @@ set(SUPPORTED_GPU_CUDA_13_1 ${SUPPORTED_GPU_CUDA_13_0})
 
 set(CUDA_NEW_DRIVER ON CACHE BOOL "Use the new Clang offloading Driver")
 
+# The CUDA libraries the library tests use. A toolkit which lacks one of them
+# gets no tests of it.
+set(CUDA_TESTED_LIBRARIES cublas cufft curand cusolver cusparse)
+
 # Create targets for CUDA tests that are part of the test suite.
 macro(create_local_cuda_tests VariantSuffix)
   set(VariantOffload "cuda")
@@ -120,6 +124,63 @@ macro(create_local_cuda_tests VariantSuffix)
                           "cuda-(8[.]0|9[.]2)-c[+][+]11-libc[+][+]"
                           ${VariantOffload} ${VariantSuffix}
                           "${VariantCPPFLAGS}" "${VariantLibs}")
+endmacro()
+
+# Create a test of a CUDA library, <Library>/<Name>.cu, linked with that library
+# and any others listed after its name. It checks its own results and prints
+# them, and its output is compared with <Library>/<Name>.reference_output.
+# Variants whose toolkit lacks one of the libraries get no such test.
+macro(create_one_cuda_library_test Library Name)
+  set(_LibraryTargets)
+  set(_MissingLibrary FALSE)
+  foreach(_Library IN ITEMS ${Library} ${ARGN})
+    if(TARGET ${_Library}-${_CudaVersion})
+      list(APPEND _LibraryTargets ${_Library}-${_CudaVersion})
+    else()
+      set(_MissingLibrary TRUE)
+    endif()
+  endforeach()
+  if(NOT _MissingLibrary)
+    gpu_glob(_sources ${Library}/${Name}.cu)
+    set(_executable ${Library}-${Name}-${VariantSuffix})
+    llvm_test_run()
+    llvm_test_verify(WORKDIR %S
+      %b/${FPCMP} %o ${Library}/${Name}.reference_output-${VariantSuffix}
+    )
+    llvm_test_executable(${_executable} ${_sources})
+    llvm_test_data(${_executable}
+                   DEST_SUFFIX "-${VariantSuffix}"
+                   ${Library}/${Name}.reference_output)
+    # For cuda_library_test.h.
+    target_include_directories(${_executable} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_options(${_executable} PUBLIC ${VariantCPPFLAGS})
+    target_link_libraries(${_executable} ${VariantLibs} ${_LibraryTargets})
+    list(APPEND VARIANT_LIBRARY_TESTS ${_executable})
+    list(APPEND VARIANT_LIBRARY_TEST_TARGETS ${_executable}.test)
+  endif()
+endmacro()
+
+# Create the tests of the CUDA libraries for a variant, and the targets which
+# build and run them.
+macro(create_cuda_library_tests VariantSuffix)
+  set(VARIANT_LIBRARY_TESTS)
+  set(VARIANT_LIBRARY_TEST_TARGETS)
+
+  if(VARIANT_LIBRARY_TESTS)
+    add_custom_target(cuda-tests-libraries-${VariantSuffix}
+      COMMENT "Build CUDA library tests for ${VariantSuffix}")
+    add_dependencies(cuda-tests-libraries-${VariantSuffix} ${VARIANT_LIBRARY_TESTS})
+    add_dependencies(cuda-tests-libraries cuda-tests-libraries-${VariantSuffix})
+    add_dependencies(cuda-tests-${VariantSuffix} cuda-tests-libraries-${VariantSuffix})
+
+    add_custom_target(check-cuda-libraries-${VariantSuffix}
+      COMMAND ${TEST_SUITE_LIT} ${TEST_SUITE_LIT_FLAGS}
+              ${VARIANT_LIBRARY_TEST_TARGETS}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      DEPENDS cuda-tests-libraries-${VariantSuffix}
+      USES_TERMINAL)
+    add_dependencies(check-cuda-libraries check-cuda-libraries-${VariantSuffix})
+  endif()
 endmacro()
 
 macro(thrust_make_test_name TestName TestSourcePath)
@@ -202,6 +263,8 @@ function(create_cuda_test_variant Std VariantSuffix)
   create_local_cuda_tests(${VariantSuffix})
   add_dependencies(cuda-tests-simple cuda-tests-simple-${VariantSuffix})
 
+  create_cuda_library_tests(${VariantSuffix})
+
   if(DEFINED THRUST_PATH AND (NOT ${Std} IN_LIST "c++14;c++17;c++20"))
     create_thrust_tests(${VariantSuffix})
   endif()
@@ -227,6 +290,13 @@ macro(create_cuda_tests)
     add_library(cudart-${CudaVersion} SHARED IMPORTED)
     set_property(TARGET cudart-${CudaVersion} PROPERTY IMPORTED_LOCATION
       ${CudaDir}/lib64/libcudart.so)
+    foreach(_Library IN LISTS CUDA_TESTED_LIBRARIES)
+      if(EXISTS ${CudaDir}/lib64/lib${_Library}.so)
+        add_library(${_Library}-${CudaVersion} SHARED IMPORTED)
+        set_property(TARGET ${_Library}-${CudaVersion} PROPERTY IMPORTED_LOCATION
+          ${CudaDir}/lib64/lib${_Library}.so)
+      endif()
+    endforeach()
   endforeach(CudaDir)
 
   if(NOT CUDA_PATHS)
@@ -241,6 +311,12 @@ macro(create_cuda_tests)
     COMMENT "Build all simple CUDA tests")
   add_custom_target(check-cuda-simple
     COMMENT "Run all simple CUDA tests")
+  # The tests of the CUDA libraries, which are not simple tests: they need the
+  # libraries, which not every CUDA installation has.
+  add_custom_target(cuda-tests-libraries
+    COMMENT "Build all CUDA library tests")
+  add_custom_target(check-cuda-libraries
+    COMMENT "Run all CUDA library tests")
 
   # set default GPU arch
   if(NOT CUDA_GPU_ARCH)
@@ -397,7 +473,7 @@ macro(create_cuda_tests)
   endforeach()
 
   # convenience target to build all CUDA tests.
-  add_custom_target(cuda-tests-all DEPENDS cuda-tests-simple cuda-tests-thrust
+  add_custom_target(cuda-tests-all DEPENDS cuda-tests-simple cuda-tests-libraries cuda-tests-thrust
     COMMENT "Build all CUDA tests.")
 
   # stage lit config needed to control how CUDA tests are run.
