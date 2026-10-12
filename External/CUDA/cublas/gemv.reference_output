@@ -1,0 +1,3 @@
+cublasSgemv: PASS
+cublasSgemv transposed: PASS
+exit 0
