@@ -1,0 +1,3 @@
+cufftExecC2C round trip, size 64: PASS
+cufftExecC2C round trip, size 60: PASS
+exit 0
