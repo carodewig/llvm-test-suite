@@ -1,0 +1,6 @@
+cublasSgemm: PASS
+cublasSgemm A transposed: PASS
+cublasSgemm B transposed: PASS
+cublasDgemm: PASS
+cublasDgemm both transposed: PASS
+exit 0
