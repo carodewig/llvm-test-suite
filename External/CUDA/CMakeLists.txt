@@ -165,6 +165,7 @@ endmacro()
 macro(create_cuda_library_tests VariantSuffix)
   set(VARIANT_LIBRARY_TESTS)
   set(VARIANT_LIBRARY_TEST_TARGETS)
+  create_one_cuda_library_test(cublas level1)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

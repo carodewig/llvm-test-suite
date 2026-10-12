@@ -1,0 +1,5 @@
+cublasSdot: PASS
+cublasSnrm2: PASS
+cublasIsamax: PASS
+cublasSaxpy: PASS
+exit 0
