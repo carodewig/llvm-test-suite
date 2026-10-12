@@ -175,6 +175,7 @@ macro(create_cuda_library_tests VariantSuffix)
   create_one_cuda_library_test(cufft 2d)
   create_one_cuda_library_test(curand host)
   create_one_cuda_library_test(curand device)
+  create_one_cuda_library_test(cusolver potrf)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

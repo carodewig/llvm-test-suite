@@ -1,0 +1,5 @@
+cusolverDnDpotrf info: PASS
+cusolverDnDpotrf factor: PASS
+cusolverDnDpotrs info: PASS
+cusolverDnDpotrs solution: PASS
+exit 0
