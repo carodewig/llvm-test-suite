@@ -1,0 +1,8 @@
+curand_Philox4x32_10 known answers: PASS
+curand first numbers of seed 0: PASS
+curand_uniform range: PASS
+curand_uniform mean: PASS
+curand_uniform variance: PASS
+curand_normal mean: PASS
+curand_normal variance: PASS
+exit 0
