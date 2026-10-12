@@ -411,6 +411,7 @@ macro(create_cuda_tests)
     get_version(_CudaVersion ${_CudaPath})
     set(_Cuda_Suffix "cuda-${_CudaVersion}")
     set(_Cuda_CPPFLAGS --cuda-path=${_CudaPath} -I${_CudaPath}/include -xcuda)
+    set(_Cuda_LDFLAGS)
     # clear the list of GPUs to compile for.
     set(_CudaArchFlags)
     set(_CudaArchList)
@@ -430,7 +431,11 @@ macro(create_cuda_tests)
     list(APPEND _Cuda_CPPFLAGS ${_CudaArchFlags})
     if (CUDA_NEW_DRIVER)
       list(APPEND _Cuda_CPPFLAGS -fgpu-rdc --offload-new-driver)
-      list(APPEND _Cuda_LDFLAGS --offload-new-driver)
+      # The objects are linked without any CUDA sources, so the link step has
+      # to be told to link their device code, and where to find the CUDA tools
+      # which do that.
+      list(APPEND _Cuda_LDFLAGS --offload-new-driver --offload-link
+                                --cuda-path=${_CudaPath})
     endif()
 
     set(_Cuda_Libs cudart-${_CudaVersion})
