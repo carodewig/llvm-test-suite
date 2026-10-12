@@ -1,0 +1,3 @@
+cufftExecC2C 2D spectrum: PASS
+cufftExecC2C 2D back to the impulse: PASS
+exit 0
