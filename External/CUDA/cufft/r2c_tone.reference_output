@@ -1,0 +1,3 @@
+cufftExecR2C spectrum: PASS
+cufftExecC2R back to the signal: PASS
+exit 0
