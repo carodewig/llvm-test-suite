@@ -168,6 +168,7 @@ macro(create_cuda_library_tests VariantSuffix)
   create_one_cuda_library_test(cublas level1)
   create_one_cuda_library_test(cublas gemv)
   create_one_cuda_library_test(cublas gemm)
+  create_one_cuda_library_test(cublas gemm_batched)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

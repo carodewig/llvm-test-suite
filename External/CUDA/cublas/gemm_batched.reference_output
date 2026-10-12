@@ -1,0 +1,3 @@
+cublasSgemmStridedBatched: PASS
+cublasSgemmBatched: PASS
+exit 0
