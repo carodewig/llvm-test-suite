@@ -173,6 +173,7 @@ macro(create_cuda_library_tests VariantSuffix)
   create_one_cuda_library_test(cufft c2c_roundtrip)
   create_one_cuda_library_test(cufft r2c_tone)
   create_one_cuda_library_test(cufft 2d)
+  create_one_cuda_library_test(curand host)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

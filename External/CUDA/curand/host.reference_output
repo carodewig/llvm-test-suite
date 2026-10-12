@@ -1,0 +1,7 @@
+curandGenerateUniform range: PASS
+curandGenerateUniform mean: PASS
+curandGenerateUniform variance: PASS
+curandGenerateUniform same seed, same numbers: PASS
+curandGenerateNormal mean: PASS
+curandGenerateNormal variance: PASS
+exit 0
