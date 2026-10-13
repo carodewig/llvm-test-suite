@@ -178,6 +178,7 @@ macro(create_cuda_library_tests VariantSuffix)
   create_one_cuda_library_test(cusolver potrf)
   create_one_cuda_library_test(cusolver getrf)
   create_one_cuda_library_test(cusolver syevd)
+  create_one_cuda_library_test(cusparse spmv_csr)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

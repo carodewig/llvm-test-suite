@@ -1,0 +1,4 @@
+CSR conversion: PASS
+cusparseSpMV: PASS
+cusparseSpMV transposed: PASS
+exit 0
