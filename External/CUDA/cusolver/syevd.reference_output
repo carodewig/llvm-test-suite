@@ -1,0 +1,5 @@
+cusolverDnDsyevd info: PASS
+cusolverDnDsyevd eigenvalues: PASS
+cusolverDnDsyevd eigenvectors: PASS
+cusolverDnDsyevd eigenvector lengths: PASS
+exit 0
