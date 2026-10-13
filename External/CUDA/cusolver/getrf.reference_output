@@ -1,0 +1,6 @@
+cusolverDnDgetrf info: PASS
+cusolverDnDgetrf swaps the first row: PASS
+cusolverDnDgetrf factors: PASS
+cusolverDnDgetrs info: PASS
+cusolverDnDgetrs solution: PASS
+exit 0
