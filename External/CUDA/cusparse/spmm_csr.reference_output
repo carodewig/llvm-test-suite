@@ -1,0 +1,4 @@
+CSR conversion: PASS
+cusparseSpMM column-major: PASS
+cusparseSpMM row-major: PASS
+exit 0
