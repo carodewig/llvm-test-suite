@@ -1,0 +1,8 @@
+CUDA runtime of the headers: PASS
+kernel: PASS
+cuBLAS: PASS
+cuFFT: PASS
+cuRAND: PASS
+cuSOLVER: PASS
+cuSPARSE: PASS
+exit 0

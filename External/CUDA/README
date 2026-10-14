@@ -85,6 +85,11 @@ export TEST_SUITE_DIR=/path/to/test-suite-sources
   header the CUDA installation has, and checks a few of the device headers'
   functions.
 
+  cmake_project/ is a CUDA project as users write them, with CMake's CUDA
+  language and its FindCUDAToolkit module, which is built with Clang as the
+  CUDA compiler once per CUDA installation, as cmake-project-cuda-<version>,
+  and calls each of the libraries once.
+
   From CUDA 13 on, the CUDA C++ Core Libraries are in include/cccl of the CUDA
   installation, which nvcc searches but Clang does not, so these tests add it
   to the include path.

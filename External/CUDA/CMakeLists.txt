@@ -1,4 +1,5 @@
 include(External)
+include(ExternalProject)
 include(GPUTestVariant)
 llvm_externals_find(TEST_SUITE_CUDA_ROOT "cuda" "CUDA prerequisites")
 
@@ -210,6 +211,59 @@ macro(create_cuda_library_tests VariantSuffix)
     add_dependencies(check-cuda-libraries check-cuda-libraries-${VariantSuffix})
   endif()
 endmacro()
+
+# Build cmake_project/, a CUDA project which uses CMake's CUDA language and
+# FindCUDAToolkit, as an external project with Clang as its CUDA compiler,
+# against the CUDA installation at CudaPath, and test the program it builds.
+# It needs all of the libraries which the library tests use. CMake picks the
+# C++ standard and library, so there is one such test per CUDA installation.
+function(create_cuda_cmake_project_test CudaPath CudaVersion CudaArchList)
+  foreach(_Library IN LISTS CUDA_TESTED_LIBRARIES)
+    if(NOT TARGET ${_Library}-${CudaVersion})
+      return()
+    endif()
+  endforeach()
+  set(_name cmake-project-cuda-${CudaVersion})
+  string(REPLACE "sm_" "" _architectures "${CudaArchList}")
+  # CMake identifies the CUDA compiler by compiling for its default GPU, which
+  # for Clang is older than CUDA 13 supports, so give it one of ours.
+  list(GET CudaArchList 0 _identification_arch)
+  ExternalProject_Add(${_name}
+    SOURCE_DIR      ${CMAKE_CURRENT_SOURCE_DIR}/cmake_project
+    BINARY_DIR      ${CMAKE_CURRENT_BINARY_DIR}/${_name}
+    PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/${_name}-prefix
+    CMAKE_ARGS      -DCMAKE_BUILD_TYPE=Release
+                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCMAKE_CUDA_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCUDAToolkit_ROOT=${CudaPath}
+                    # CMake leaves the toolkit's libraries off the run path, as
+                    # Clang links them from a directory it searches implicitly,
+                    # so the program would run with whichever CUDA installation
+                    # the dynamic linker finds, as the installations share
+                    # their libraries' names.
+                    -DCMAKE_BUILD_RPATH=${CudaPath}/lib64
+    CMAKE_CACHE_ARGS -DCMAKE_CUDA_ARCHITECTURES:STRING=${_architectures}
+                     -DCMAKE_CUDA_FLAGS:STRING=--cuda-gpu-arch=${_identification_arch}
+    # So that the inner build notices changes to its sources.
+    BUILD_ALWAYS    ON
+    INSTALL_COMMAND ""
+  )
+  test_suite_add_build_dependencies(${_name})
+  add_dependencies(cuda-tests-libraries ${_name})
+
+  configure_file(cmake_project/project.reference_output
+                 ${CMAKE_CURRENT_BINARY_DIR}/${_name}.reference_output COPYONLY)
+  llvm_test_run()
+  llvm_test_verify(WORKDIR %S %b/${FPCMP} %o ${_name}.reference_output)
+  llvm_add_test(${CMAKE_CURRENT_BINARY_DIR}/${_name}.test %S/${_name}/project)
+
+  add_custom_target(check-${_name}
+    COMMAND ${TEST_SUITE_LIT} ${TEST_SUITE_LIT_FLAGS} ${_name}.test
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${_name}
+    USES_TERMINAL)
+  add_dependencies(check-cuda-libraries check-${_name})
+endfunction()
 
 macro(thrust_make_test_name TestName TestSourcePath)
   string(REPLACE "${THRUST_PATH}/testing/" "" _tmp ${TestSourcePath})
@@ -461,6 +515,7 @@ macro(create_cuda_tests)
       list(APPEND _Cuda_LDFLAGS --offload-new-driver --offload-link
                                 --cuda-path=${_CudaPath})
     endif()
+    create_cuda_cmake_project_test(${_CudaPath} ${_CudaVersion} "${_CudaArchList}")
 
     set(_Cuda_Libs cudart-${_CudaVersion})
     foreach(_Std IN ITEMS "c++98" "c++11" "c++14" "c++17" "c++20")
