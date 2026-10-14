@@ -129,11 +129,17 @@ endmacro()
 # Create a test of a CUDA library, <Library>/<Name>.cu, linked with that library
 # and any others listed after its name. It checks its own results and prints
 # them, and its output is compared with <Library>/<Name>.reference_output.
-# Variants whose toolkit lacks one of the libraries get no such test.
+# Variants whose toolkit lacks one of the libraries get no such test. Tests of
+# the libraries which need none of them, such as the headers test, are in a
+# directory which is not named after a library, and link none.
 macro(create_one_cuda_library_test Library Name)
   set(_LibraryTargets)
   set(_MissingLibrary FALSE)
-  foreach(_Library IN ITEMS ${Library} ${ARGN})
+  set(_Libraries ${ARGN})
+  if(${Library} IN_LIST CUDA_TESTED_LIBRARIES)
+    list(APPEND _Libraries ${Library})
+  endif()
+  foreach(_Library IN LISTS _Libraries)
     if(TARGET ${_Library}-${_CudaVersion})
       list(APPEND _LibraryTargets ${_Library}-${_CudaVersion})
     else()
@@ -153,6 +159,12 @@ macro(create_one_cuda_library_test Library Name)
                    ${Library}/${Name}.reference_output)
     # For cuda_library_test.h.
     target_include_directories(${_executable} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    # From CUDA 13 on, the CUDA C++ Core Libraries (libcu++, Thrust, CUB),
+    # which some headers of the toolkit include, are in include/cccl, which
+    # nvcc searches but Clang does not.
+    if(EXISTS ${_CudaPath}/include/cccl)
+      target_include_directories(${_executable} PRIVATE ${_CudaPath}/include/cccl)
+    endif()
     target_compile_options(${_executable} PUBLIC ${VariantCPPFLAGS})
     target_link_libraries(${_executable} ${VariantLibs} ${_LibraryTargets})
     list(APPEND VARIANT_LIBRARY_TESTS ${_executable})
@@ -180,6 +192,7 @@ macro(create_cuda_library_tests VariantSuffix)
   create_one_cuda_library_test(cusolver syevd)
   create_one_cuda_library_test(cusparse spmv_csr)
   create_one_cuda_library_test(cusparse spmm_csr)
+  create_one_cuda_library_test(headers libraries)
 
   if(VARIANT_LIBRARY_TESTS)
     add_custom_target(cuda-tests-libraries-${VariantSuffix}

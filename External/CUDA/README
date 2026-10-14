@@ -81,6 +81,13 @@ export TEST_SUITE_DIR=/path/to/test-suite-sources
   which its reference output then compares. Like the other tests, they get a
   variant per CUDA version, C++ standard and standard library, and are named
   <library>-<test>-<variant_suffix>, e.g. cublas-level1-cuda-12.9-c++11-libc++.
+  headers/libraries.cu compiles every header of the libraries and every device
+  header the CUDA installation has, and checks a few of the device headers'
+  functions.
+
+  From CUDA 13 on, the CUDA C++ Core Libraries are in include/cccl of the CUDA
+  installation, which nvcc searches but Clang does not, so these tests add it
+  to the include path.
 
   The GPU code doing the libraries' work is NVIDIA's, compiled into the
   libraries, so these tests are about Clang compiling programs against the
