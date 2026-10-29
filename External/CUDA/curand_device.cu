@@ -22,7 +22,9 @@ int main() {
 // cuRAND's device API is implemented in curand_kernel.h and compiled by Clang.
 #include <curand_kernel.h>
 
-// Philox4x32-10 counter, key and result from Random123's tests/kat_vectors.
+// Philox4x32-10 turns a four-word counter and a two-word key into four output
+// words. These input/output pairs from Random123's tests/kat_vectors check
+// cuRAND's implementation bit for bit.
 struct KnownAnswer {
   unsigned counter[4];
   unsigned key[2];
@@ -50,7 +52,9 @@ __global__ void philox(const KnownAnswer *answers, uint4 *results) {
   results[i] = curand_Philox4x32_10(counter, key);
 }
 
-// curand_init(0, 0, 0) starts at counter and key zero.
+// With seed, subsequence and offset zero, curand_init starts at counter and
+// key zero. The first four curand calls should return the four words of
+// known_answers[0].result, also checking cuRAND's state-based interface.
 __global__ void first_numbers(unsigned *numbers) {
   curandStatePhilox4_32_10_t state;
   curand_init(0, 0, 0, &state);
